@@ -12,14 +12,23 @@ import GameKit
 class GameKitNode: Node {
     
     private var player: GKPlayer?
-    private var leaderboardMap = [String: GKLeaderboard]()
     
     @Signal var didLoadLeaderboards: SignalWithArguments<[String]>
     
     @Callable(autoSnakeCase: true)
     func getLeaderboards(ids: [String]) {
+        let signal = didLoadLeaderboards
         Task {
-            let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: ids)
+            guard let leaderboards = try? await GKLeaderboard.loadLeaderboards(IDs: ids) else {
+                return
+            }
+            
+            var ids = [String]()
+            for leaderboard in leaderboards {
+                ids.append(leaderboard.baseLeaderboardID)
+            }
+            
+            signal.emit(ids)
         }
     }
     

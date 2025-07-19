@@ -15,12 +15,22 @@ class GameKitNode: Node {
         GKLocalPlayer.local
     }
     
-    @Signal var didLoadLeaderboards: SignalWithArguments<[String]>
+    /**
+     Signal that emits the player's entries for a leaderboard.
+     
+     - parameters:
+        - leaderboardId: String
+        - score: Int
+        - rank: Int
+     */
     @Signal var didLoadPlayerEntry: SignalWithArguments<String, Int, Int>
     
+    /**
+     Fetches the leaderboards for the given ids, and then load's the player's entry for each leaderboard.
+     The `didLoadPlayerEntry` is emitted for each entry that is loaded for the player.
+     */
     @Callable(autoSnakeCase: true)
-    func getLeaderboards(ids: [String]) {
-        let signal = didLoadLeaderboards
+    func refreshLeaderboards(ids: [String]) {
         Task {
             guard let leaderboards = try? await GKLeaderboard.loadLeaderboards(IDs: ids) else {
                 return
@@ -30,17 +40,19 @@ class GameKitNode: Node {
             for leaderboard in leaderboards {
                 ids.append(leaderboard.baseLeaderboardID)
             }
-            
-            signal.emit(ids)
-            
-            for leaderboard in leaderbords {
+                        
+            for leaderboard in leaderboards {
                 leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
+                    guard let entry, error == nil else { return }
                     didLoadPlayerEntry.emit(leaderboard.baseLeaderboardID, entry.score, entry.score)
                 }
             }
         }
     }
     
+    /**
+     - Returns the loaded player as a `Dictionary`.
+     */
     @Callable(autoSnakeCase: true)
     func getLoadedPlayer() -> [String: String] {
         var result = [String: String]()
@@ -54,6 +66,9 @@ class GameKitNode: Node {
         return result
     }
 
+    /**
+     Shows the native Game Center leaderboard for the given id.
+     */
     @Callable(autoSnakeCase: true)
     func showLeaderboard(leaderboardId: String) {
         Task { @MainActor in
@@ -66,10 +81,13 @@ class GameKitNode: Node {
         }
     }
     
+    /**
+     Submits the current player's score for the leaderboard with the given id.
+     */
     @Callable(autoSnakeCase: true)
-    func submitScore(score: Int, context: Int, leaderboardIds: [String]) {
-        GKLeaderboard.submitScore(score, context: context, player: player, leaderboardIDs: leaderboardIds) { error in
-            return
+    func submitScore(score: Int, leaderboardIds: [String]) {
+        GKLeaderboard.submitScore(score, context: 0, player: player, leaderboardIDs: leaderboardIds) { error in
+            refreshLeaderboards(ids: leaderboardIds)
         }
     }
 }

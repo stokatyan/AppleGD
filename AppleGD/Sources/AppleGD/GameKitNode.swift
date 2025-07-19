@@ -26,11 +26,19 @@ class GameKitNode: Node {
     @Signal var didLoadPlayerEntry: SignalWithArguments<String, Int, Int>
     
     /**
+     Signal that emits when a score completed being submitted.
+     - parameters:
+        - didSucceed: Bool
+     */
+    @Signal var didSubmitScore: SignalWithArguments<Bool>
+    
+    /**
      Fetches the leaderboards for the given ids, and then load's the player's entry for each leaderboard.
      The `didLoadPlayerEntry` is emitted for each entry that is loaded for the player.
      */
     @Callable(autoSnakeCase: true)
     func refreshLeaderboards(ids: [String]) {
+        let signal = didLoadPlayerEntry
         Task {
             guard let leaderboards = try? await GKLeaderboard.loadLeaderboards(IDs: ids) else {
                 return
@@ -44,7 +52,7 @@ class GameKitNode: Node {
             for leaderboard in leaderboards {
                 leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
                     guard let entry, error == nil else { return }
-                    didLoadPlayerEntry.emit(leaderboard.baseLeaderboardID, entry.score, entry.score)
+                    signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.score)
                 }
             }
         }
@@ -86,8 +94,13 @@ class GameKitNode: Node {
      */
     @Callable(autoSnakeCase: true)
     func submitScore(score: Int, leaderboardIds: [String]) {
+        let signal = didSubmitScore
         GKLeaderboard.submitScore(score, context: 0, player: player, leaderboardIDs: leaderboardIds) { error in
-            refreshLeaderboards(ids: leaderboardIds)
+            self.didSubmitScore.emit(error == nil)
+            guard error == nil else { return }
+            self.refreshLeaderboards(ids: leaderboardIds)
         }
     }
 }
+
+extension GameKitNode: @unchecked Sendable { }

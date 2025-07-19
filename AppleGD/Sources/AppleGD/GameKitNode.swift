@@ -16,6 +16,7 @@ class GameKitNode: Node {
     }
     
     @Signal var didLoadLeaderboards: SignalWithArguments<[String]>
+    @Signal var didLoadPlayerEntry: SignalWithArguments<String, Int, Int>
     
     @Callable(autoSnakeCase: true)
     func getLeaderboards(ids: [String]) {
@@ -31,6 +32,12 @@ class GameKitNode: Node {
             }
             
             signal.emit(ids)
+            
+            for leaderboard in leaderbords {
+                leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
+                    didLoadPlayerEntry.emit(leaderboard.baseLeaderboardID, entry.score, entry.score)
+                }
+            }
         }
     }
     

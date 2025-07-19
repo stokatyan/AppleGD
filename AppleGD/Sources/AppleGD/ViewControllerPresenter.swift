@@ -18,6 +18,14 @@ public class ViewControllerPresenter {
             topVC.present(viewController, animated: animated, completion: nil)
         }
     }
+    
+    /// Get the active `UIWindowScene`
+    @MainActor
+    public static var activeWindowScene: UIWindowScene? {
+        return UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })
+    }
 
     @MainActor
     private static func topViewController(base: UIViewController? = UIApplication.shared.connectedScenes

@@ -9,7 +9,7 @@ import SwiftGodot
 import StoreKit
 
 @Godot
-class InAppPurchaseNode: Node {
+class StoreKitNode: Node {
     
     private let kPendingPurchaseSet = "kPendingPurchaseSet"
     
@@ -146,6 +146,16 @@ class InAppPurchaseNode: Node {
         }
     }
     
+    @Callable(autoSnakeCase: true)
+    func requestReview() {
+        Task { @MainActor in
+            guard let window = ViewControllerPresenter.activeWindowScene else {
+                return
+            }
+            AppStore.requestReview(in: window)
+        }
+    }
+    
     private func getIsPurchasePending(id: String) -> Bool {
         let array = UserDefaults.standard.stringArray(forKey: kPendingPurchaseSet) ?? []
         return array.contains { $0 == id }
@@ -165,4 +175,4 @@ class InAppPurchaseNode: Node {
     }
 }
 
-extension InAppPurchaseNode: @unchecked Sendable {}
+extension StoreKitNode: @unchecked Sendable {}

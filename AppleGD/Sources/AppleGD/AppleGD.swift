@@ -3,4 +3,4 @@
 
 import SwiftGodot
 
-#initSwiftExtension(cdecl: "swift_entry_point", types: [GameKitNode.self, InAppPurchaseNode.self, GProduct.self])
+#initSwiftExtension(cdecl: "swift_entry_point", types: [GameKitNode.self, StoreKitNode.self, GProduct.self])

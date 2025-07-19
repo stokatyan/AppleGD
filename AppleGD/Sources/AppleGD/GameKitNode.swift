@@ -11,7 +11,9 @@ import GameKit
 @Godot
 class GameKitNode: Node {
     
-    private var player: GKPlayer?
+    private var player: GKPlayer {
+        GKLocalPlayer.local
+    }
     
     @Signal var didLoadLeaderboards: SignalWithArguments<[String]>
     
@@ -36,10 +38,6 @@ class GameKitNode: Node {
     func getLoadedPlayer() -> [String: String] {
         var result = [String: String]()
         
-        guard let player else {
-            return result
-        }
-        
         result["gamePlayerID"] = player.gamePlayerID
         result["displayName"] = player.displayName
         result["alias"] = player.alias
@@ -63,10 +61,6 @@ class GameKitNode: Node {
     
     @Callable(autoSnakeCase: true)
     func submitScore(score: Int, context: Int, leaderboardIds: [String]) {
-        guard let player else {
-            return
-        }
-
         GKLeaderboard.submitScore(score, context: context, player: player, leaderboardIDs: leaderboardIds) { error in
             return
         }

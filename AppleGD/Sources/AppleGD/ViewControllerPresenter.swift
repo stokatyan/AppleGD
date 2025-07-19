@@ -5,11 +5,14 @@
 //  Created by Shant Tokatyan on 7/18/25.
 //
 
+#if os(iOS)
 import UIKit
+
 
 public class ViewControllerPresenter {
     
     public static func present(_ viewController: UIViewController, animated: Bool = true) {
+        
         Task { @MainActor in
             guard let topVC = topViewController() else {
                 print("No view controller to present from")
@@ -48,3 +51,5 @@ public class ViewControllerPresenter {
         return base
     }
 }
+
+#endif

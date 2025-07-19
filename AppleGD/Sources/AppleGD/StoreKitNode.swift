@@ -148,12 +148,14 @@ class StoreKitNode: Node {
     
     @Callable(autoSnakeCase: true)
     func requestReview() {
+        #if os(iOS)
         Task { @MainActor in
             guard let window = ViewControllerPresenter.activeWindowScene else {
                 return
             }
             AppStore.requestReview(in: window)
         }
+        #endif
     }
     
     private func getIsPurchasePending(id: String) -> Bool {

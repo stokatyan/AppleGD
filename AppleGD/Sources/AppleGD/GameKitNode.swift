@@ -79,6 +79,7 @@ class GameKitNode: Node {
      */
     @Callable(autoSnakeCase: true)
     func showLeaderboard(leaderboardId: String) {
+        #if os(iOS)
         Task { @MainActor in
             let viewController = GKGameCenterViewController(
                 leaderboardID: leaderboardId,
@@ -87,6 +88,7 @@ class GameKitNode: Node {
             )
             ViewControllerPresenter.present(viewController)
         }
+        #endif
     }
     
     /**

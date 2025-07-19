@@ -8,14 +8,18 @@
 import UIKit
 
 public class ViewControllerPresenter {
+    
     public static func present(_ viewController: UIViewController, animated: Bool = true) {
-        guard let topVC = topViewController() else {
-            print("No view controller to present from")
-            return
+        Task { @MainActor in
+            guard let topVC = topViewController() else {
+                print("No view controller to present from")
+                return
+            }
+            topVC.present(viewController, animated: animated, completion: nil)
         }
-        topVC.present(viewController, animated: animated, completion: nil)
     }
 
+    @MainActor
     private static func topViewController(base: UIViewController? = UIApplication.shared.connectedScenes
         .compactMap { ($0 as? UIWindowScene)?.keyWindow }
         .first?.rootViewController) -> UIViewController? {

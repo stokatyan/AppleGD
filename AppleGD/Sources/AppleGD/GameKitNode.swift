@@ -42,7 +42,14 @@ class GameKitNode: Node {
 
     @Callable(autoSnakeCase: true)
     func showLeaderboard(leaderboardId: String) {
-        
+        Task { @MainActor in
+            let viewController = GKGameCenterViewController(
+                leaderboardID: leaderboardId,
+                playerScope: .global,
+                timeScope: .allTime
+            )
+            ViewControllerPresenter.present(viewController)
+        }
     }
     
     @Callable(autoSnakeCase: true)

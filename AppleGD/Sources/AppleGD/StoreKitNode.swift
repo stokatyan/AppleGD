@@ -151,11 +151,16 @@ class StoreKitNode: Node {
         #if os(iOS)
         Task { @MainActor in
             guard let window = ViewControllerPresenter.activeWindowScene else {
+                print("StoreKitNode: Failed to Request Review, no window")
                 return
             }
+            print("StoreKitNode: Request Review")
             AppStore.requestReview(in: window)
         }
+        #else
+        print("StoreKitNode: Failed to Request Review, not iOS")
         #endif
+        
     }
     
     private func getIsPurchasePending(id: String) -> Bool {

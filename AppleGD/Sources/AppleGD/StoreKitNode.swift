@@ -154,13 +154,12 @@ class StoreKitNode: Node {
                 print("StoreKitNode: Failed to Request Review, no window")
                 return
             }
-            print("StoreKitNode: Request Review")
             AppStore.requestReview(in: window)
+            print("StoreKitNode: requestReview completed")
         }
         #else
         print("StoreKitNode: Failed to Request Review, not iOS")
         #endif
-        
     }
     
     private func getIsPurchasePending(id: String) -> Bool {

@@ -64,5 +64,14 @@
       buildConfiguration = "Release"
       revealArchiveInOrganizer = "YES"
       allowsArchivingForSimulator = "YES">
+      <PostActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Run Script"
+               scriptText = "# Post-archive move of AppleGD.framework and SwiftGodot.framework&#10;if [[ &quot;$ACTION&quot; == &quot;install&quot; &amp;&amp; &quot;$CONFIGURATION&quot; == &quot;Release&quot; ]]; then&#10;    echo &quot;&#x1f4e6; Running Post-Archive Action...&quot;&#10;&#10;    FRAMEWORKS=(&quot;AppleGD.framework&quot; &quot;SwiftGodot.framework&quot;)&#10;    SOURCE_DIR=&quot;${ARCHIVE_PRODUCTS_PATH}/Products/usr/local/lib/&quot;&#10;    DEST_DIR=&quot;$(cd &quot;$SRCROOT/../..&quot; &amp;&amp; pwd)/LooneyLanes/looneylanesgodot/bin/ios&quot;&#10;&#10;    echo &quot;&#x1f4c1; Source: $SOURCE_DIR&quot;&#10;    echo &quot;&#x1f4c1; Destination: $DEST_DIR&quot;&#10;&#10;    mkdir -p &quot;$DEST_DIR&quot;&#10;&#10;    for FRAMEWORK in &quot;${FRAMEWORKS[@]}&quot;; do&#10;        SOURCE_PATH=&quot;${SOURCE_DIR}/${FRAMEWORK}&quot;&#10;        DEST_PATH=&quot;${DEST_DIR}/${FRAMEWORK}&quot;&#10;&#10;        if [[ -d &quot;$SOURCE_PATH&quot; ]]; then&#10;            echo &quot;&#x2702;&#xfe0f; Moving $FRAMEWORK &#x2192; $DEST_PATH&quot;&#10;            mv -f &quot;$SOURCE_PATH&quot; &quot;$DEST_PATH&quot;&#10;        else&#10;            echo &quot;&#x26a0;&#xfe0f; WARNING: $FRAMEWORK not found at $SOURCE_PATH&quot;&#10;        fi&#10;    done&#10;&#10;    echo &quot;&#x2705; Post-archive framework move complete.&quot;&#10;fi&#10;">
+            </ActionContent>
+         </ExecutionAction>
+      </PostActions>
    </ArchiveAction>
 </Scheme>

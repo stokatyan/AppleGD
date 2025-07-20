@@ -52,7 +52,7 @@ class GameKitNode: Node {
             for leaderboard in leaderboards {
                 leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
                     guard let entry, error == nil else { return }
-                    signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.score)
+                    signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.rank)
                 }
             }
         }

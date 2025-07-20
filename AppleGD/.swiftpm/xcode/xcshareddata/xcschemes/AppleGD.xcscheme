@@ -5,7 +5,7 @@
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
-      buildArchitectures = "Automatic">
+      buildArchitectures = "All">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -62,6 +62,7 @@
    </AnalyzeAction>
    <ArchiveAction
       buildConfiguration = "Release"
-      revealArchiveInOrganizer = "YES">
+      revealArchiveInOrganizer = "YES"
+      allowsArchivingForSimulator = "YES">
    </ArchiveAction>
 </Scheme>

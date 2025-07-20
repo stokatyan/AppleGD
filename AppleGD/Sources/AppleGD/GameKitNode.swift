@@ -11,6 +11,8 @@ import GameKit
 @Godot
 class GameKitNode: Node {
     
+    private var gameCenterDelegate = GameCenterDelegate()
+    
     private var player: GKPlayer {
         GKLocalPlayer.local
     }
@@ -86,6 +88,7 @@ class GameKitNode: Node {
                 playerScope: .global,
                 timeScope: .allTime
             )
+            viewController.gameCenterDelegate = gameCenterDelegate
             ViewControllerPresenter.present(viewController)
         }
         #endif

@@ -17,6 +17,8 @@ class GameKitNode: Node {
         GKLocalPlayer.local
     }
     
+    private var failedLeaderboardIds = Set<String>()
+    
     /**
      Signal that emits the player's entries for a leaderboard.
      
@@ -33,6 +35,10 @@ class GameKitNode: Node {
         - didSucceed: Bool
      */
     @Signal var didSubmitScore: SignalWithArguments<Bool>
+    
+    func refreshFailedLeaderboards() {
+        refreshLeaderboards(ids: Array(failedLeaderboardIds))
+    }
     
     /**
      Fetches the leaderboards for the given ids, and then load's the player's entry for each leaderboard.
@@ -60,14 +66,19 @@ class GameKitNode: Node {
                             if let error {
                                 print("error: \(error)")
                             }
+                            self.failedLeaderboardIds.insert(leaderboard.baseLeaderboardID)
                             return
                         }
+                        self.failedLeaderboardIds.remove(leaderboard.baseLeaderboardID)
                         signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.rank)
                     }
                 }
             } catch {
                 print("Swift (refreshLeaderboards): Failed to load leaderboards")
                 print("     error:\n\(error)")
+                for id in ids {
+                    failedLeaderboardIds.insert(id)
+                }
             }
         }
     }

@@ -129,19 +129,25 @@ class StoreKitNode: Node {
                     switch verificationResult {
                     case .unverified:
                         didCompletePurchase.emit(productId, false)
+                        print("Swift: purchaseProduct (unverified)")
                     case .verified:
                         didCompletePurchase.emit(productId, true)
+                        print("Swift: purchaseProduct (verified)")
                     }
                 case .userCancelled:
                     didCancelProductPurchase.emit(productId)
+                    print("Swift: purchaseProduct (userCancelled)")
                 case .pending:
                     setIsPurchasePending(id: productId, isPending: true)
                     didCreatePendingPurchase.emit(productId)
+                    print("Swift: purchaseProduct (pending)")
                 @unknown default:
                     didReachUnkownState.emit(productId)
+                    print("Swift: purchaseProduct (unkown)")
                 }
             } catch {
                 didFailToCompletePurchase.emit(productId)
+                print("Swift: purchaseProduct (error): \(error)")
             }
         }
     }

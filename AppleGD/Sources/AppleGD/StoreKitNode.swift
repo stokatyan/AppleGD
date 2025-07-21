@@ -121,13 +121,16 @@ class StoreKitNode: Node {
         let failureSignal = didFailToLoadAppProducts
         
         await Task { @MainActor in
-            guard let appProducts = try? await Product.products(for: productIdentifiers) else {
-                failureSignal.emit(productIdentifiers)
-                return
-            }
             
-            for product in appProducts {
-                idToProductMap[product.id] = product
+            do {
+                let appProducts = try? await Product.products(for: productIdentifiers)
+                for product in appProducts {
+                    idToProductMap[product.id] = product
+                }
+            } catch {
+                print("Swift (requestProducts): Fail to load product identifiers")
+                print("  error:\n\(error)")
+                failureSignal.emit(productIdentifiers)
             }
         }
     }
@@ -146,7 +149,7 @@ class StoreKitNode: Node {
             }
             
             guard let product = idToProductMap[productId] else {
-                print("Swift (purchaseProduct): Failed to find product in purchaseProduct")
+                print("Swift (purchaseProduct): Failed to find product")
                 return
             }
             

@@ -42,30 +42,32 @@ class GameKitNode: Node {
     func refreshLeaderboards(ids: [String]) {
         let signal = didLoadPlayerEntry
         Task {
-            guard let leaderboards = try? await GKLeaderboard.loadLeaderboards(IDs: ids) else {
-                print("Swift (refreshLeaderboards): Failed to load leaderboards")
-                return
-            }
-            
-            var ids = [String]()
-            for leaderboard in leaderboards {
-                ids.append(leaderboard.baseLeaderboardID)
-            }
-                        
-            for leaderboard in leaderboards {
-                leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
-                    guard let entry, error == nil else {
-                        print("Swift (refreshLeaderboards): error refreshing leaderboard \(leaderboard.baseLeaderboardID)")
-                        if let entry {
-                            print("entry: \(entry)")
-                        }
-                        if let error {
-                            print("error: \(error)")
-                        }
-                        return
-                    }
-                    signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.rank)
+            do {
+                let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: ids)
+                
+                var ids = [String]()
+                for leaderboard in leaderboards {
+                    ids.append(leaderboard.baseLeaderboardID)
                 }
+                            
+                for leaderboard in leaderboards {
+                    leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
+                        guard let entry, error == nil else {
+                            print("Swift (refreshLeaderboards): error refreshing leaderboard \(leaderboard.baseLeaderboardID)")
+                            if let entry {
+                                print("entry: \(entry)")
+                            }
+                            if let error {
+                                print("error: \(error)")
+                            }
+                            return
+                        }
+                        signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.rank)
+                    }
+                }
+            } catch {
+                print("Swift (refreshLeaderboards): Failed to load leaderboards")
+                print("     error:\n\(error)")
             }
         }
     }

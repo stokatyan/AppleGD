@@ -13,6 +13,7 @@ class StoreKitNode: Node {
     
     private let kPendingPurchaseSet = "kPendingPurchaseSet"
     
+    @MainActor
     private var idToProductMap = [String: Product]()
     
     /**
@@ -88,66 +89,92 @@ class StoreKitNode: Node {
         
     @Callable(autoSnakeCase: true)
     func requestProducts(productIdentifiers: [String]) {
-        let failureSignal = didFailToLoadAppProducts
         let successSignal = didLoadAppProducts
-        Task {
+        let failureSignal = didFailToLoadAppProducts
+        Task { @MainActor in
+            await self.requestProducts(productIdentifiers: productIdentifiers)
+            
+
+            var gProducts = VariantArray()
+            var failedToLoadProducts = [String]()
+            
+            for productIdentifier in productIdentifiers {
+                if let product = idToProductMap[productIdentifier] {
+                    let gProduct = GProduct()
+                    await gProduct.set(product: product)
+                    gProducts.append(gProduct.toVariant())
+                } else {
+                    failedToLoadProducts.append(productIdentifier)
+                }
+            }
+            
+            successSignal.emit(gProducts)
+            if !failedToLoadProducts.isEmpty {
+                failureSignal.emit(failedToLoadProducts)
+            }
+        }
+    }
+    
+    private func requestProducts(productIdentifiers: [String]) async {
+        let failureSignal = didFailToLoadAppProducts
+        
+        await Task { @MainActor in
             guard let appProducts = try? await Product.products(for: productIdentifiers) else {
                 failureSignal.emit(productIdentifiers)
                 return
             }
             
-            var gProducts = VariantArray()
             for product in appProducts {
                 idToProductMap[product.id] = product
-                
-                let gProduct = GProduct()
-                await gProduct.set(product: product)
-                gProducts.append(gProduct.toVariant())
             }
-            
-            successSignal.emit(gProducts)
         }
     }
     
     @Callable(autoSnakeCase: true)
     func purchaseProduct(productId: String) {
-        guard let product = idToProductMap[productId] else {
-            return
-        }
-        
         let didCancelPurchase = didCancelProductPurchase
         let didCompletePurchase = didCompleteProductPurchase
         let didCreatePendingPurchase = didCreatePendingProductPurchase
         let didFailToCompletePurchase = didFailToCompleteProductPurchase
         let didReachUnkownState = didReachUnkownStateInProductPurchase
         
-        Task {
-            do {
-                let result = await try product.purchase()
-                switch result {
-                case .success(let verificationResult):
-                    switch verificationResult {
-                    case .unverified:
-                        didCompletePurchase.emit(productId, false)
-                        print("Swift: purchaseProduct (unverified)")
-                    case .verified:
-                        didCompletePurchase.emit(productId, true)
-                        print("Swift: purchaseProduct (verified)")
+        Task { @MainActor in
+            if idToProductMap[productId] == nil {
+                await requestProducts(productIdentifiers: [productId])
+            }
+            
+            guard let product = idToProductMap[productId] else {
+                return
+            }
+            
+            Task {
+                do {
+                    let result = await try product.purchase()
+                    switch result {
+                    case .success(let verificationResult):
+                        switch verificationResult {
+                        case .unverified:
+                            didCompletePurchase.emit(productId, false)
+                            print("Swift: purchaseProduct (unverified)")
+                        case .verified:
+                            didCompletePurchase.emit(productId, true)
+                            print("Swift: purchaseProduct (verified)")
+                        }
+                    case .userCancelled:
+                        didCancelProductPurchase.emit(productId)
+                        print("Swift: purchaseProduct (userCancelled)")
+                    case .pending:
+                        setIsPurchasePending(id: productId, isPending: true)
+                        didCreatePendingPurchase.emit(productId)
+                        print("Swift: purchaseProduct (pending)")
+                    @unknown default:
+                        didReachUnkownState.emit(productId)
+                        print("Swift: purchaseProduct (unkown)")
                     }
-                case .userCancelled:
-                    didCancelProductPurchase.emit(productId)
-                    print("Swift: purchaseProduct (userCancelled)")
-                case .pending:
-                    setIsPurchasePending(id: productId, isPending: true)
-                    didCreatePendingPurchase.emit(productId)
-                    print("Swift: purchaseProduct (pending)")
-                @unknown default:
-                    didReachUnkownState.emit(productId)
-                    print("Swift: purchaseProduct (unkown)")
+                } catch {
+                    didFailToCompletePurchase.emit(productId)
+                    print("Swift: purchaseProduct (error): \(error)")
                 }
-            } catch {
-                didFailToCompletePurchase.emit(productId)
-                print("Swift: purchaseProduct (error): \(error)")
             }
         }
     }

@@ -100,10 +100,12 @@ class StoreKitNode: Node {
             
             for productIdentifier in productIdentifiers {
                 if let product = idToProductMap[productIdentifier] {
+                    print("Swift (requestProducts): succeeded to load product for id \(productIdentifier)")
                     let gProduct = GProduct()
                     await gProduct.set(product: product)
                     gProducts.append(gProduct.toVariant())
                 } else {
+                    print("Swift (requestProducts): failed to load product for id \(productIdentifier)")
                     failedToLoadProducts.append(productIdentifier)
                 }
             }
@@ -144,6 +146,7 @@ class StoreKitNode: Node {
             }
             
             guard let product = idToProductMap[productId] else {
+                print("Swift (purchaseProduct): Failed to find product in purchaseProduct")
                 return
             }
             

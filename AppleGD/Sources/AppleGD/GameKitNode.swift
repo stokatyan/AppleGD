@@ -43,6 +43,7 @@ class GameKitNode: Node {
         let signal = didLoadPlayerEntry
         Task {
             guard let leaderboards = try? await GKLeaderboard.loadLeaderboards(IDs: ids) else {
+                print("Swift (refreshLeaderboards): Failed to load leaderboards")
                 return
             }
             
@@ -53,7 +54,16 @@ class GameKitNode: Node {
                         
             for leaderboard in leaderboards {
                 leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
-                    guard let entry, error == nil else { return }
+                    guard let entry, error == nil else {
+                        print("Swift (refreshLeaderboards): error refreshing leaderboard \(leaderboard.baseLeaderboardID)")
+                        if let entry {
+                            print("entry: \(entry)")
+                        }
+                        if let error {
+                            print("error: \(errror)")
+                        }
+                        return
+                    }
                     signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.rank)
                 }
             }

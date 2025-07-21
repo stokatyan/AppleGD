@@ -41,6 +41,10 @@ class GameKitNode: Node {
         refreshLeaderboards(ids: Array(failedLeaderboardIds))
     }
     
+    private func setupPlayerAuth() {
+        localPlayerAuth = GKLocalPlayerAuth(delegate: self)
+    }
+    
     /**
      Fetches the leaderboards for the given ids, and then load's the player's entry for each leaderboard.
      The `didLoadPlayerEntry` is emitted for each entry that is loaded for the player.
@@ -50,7 +54,7 @@ class GameKitNode: Node {
         let signal = didLoadPlayerEntry
         let player = player
         if !player.isAuthenticated || localPlayerAuth == nil {
-            localPlayerAuth = GKLocalPlayerAuth(delegate: self)
+            setupPlayerAuth()
         }
         Task {
             do {
@@ -71,9 +75,10 @@ class GameKitNode: Node {
                             if let error {
                                 print("error: \(error)")
                             }
-                            self.failedLeaderboardIds.insert(leaderboard.baseLeaderboardID)
+//                            self.failedLeaderboardIds.insert(leaderboard.baseLeaderboardID)
                             return
                         }
+
                         self.failedLeaderboardIds.remove(leaderboard.baseLeaderboardID)
                         signal.emit(leaderboard.baseLeaderboardID, entry.score, entry.rank)
                     }

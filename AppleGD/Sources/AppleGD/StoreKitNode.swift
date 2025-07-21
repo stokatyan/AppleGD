@@ -123,7 +123,7 @@ class StoreKitNode: Node {
         await Task { @MainActor in
             
             do {
-                let appProducts = try? await Product.products(for: productIdentifiers)
+                let appProducts = try await Product.products(for: productIdentifiers)
                 for product in appProducts {
                     idToProductMap[product.id] = product
                 }

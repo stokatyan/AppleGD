@@ -60,7 +60,7 @@ class GameKitNode: Node {
                             print("entry: \(entry)")
                         }
                         if let error {
-                            print("error: \(errror)")
+                            print("error: \(error)")
                         }
                         return
                     }

@@ -12,8 +12,9 @@ import GameKit
 class GameKitNode: Node {
     
     private var gameCenterDelegate = GameCenterDelegate()
+    private var localPlayerAuth: GKLocalPlayerAuth?
     
-    private var player: GKPlayer {
+    private var player: GKLocalPlayer {
         GKLocalPlayer.local
     }
     
@@ -47,6 +48,10 @@ class GameKitNode: Node {
     @Callable(autoSnakeCase: true)
     func refreshLeaderboards(ids: [String]) {
         let signal = didLoadPlayerEntry
+        let player = player
+        if !player.isAuthenticated || localPlayerAuth == nil {
+            localPlayerAuth = GKLocalPlayerAuth(delegate: self)
+        }
         Task {
             do {
                 let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: ids)

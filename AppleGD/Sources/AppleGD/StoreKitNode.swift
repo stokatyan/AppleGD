@@ -117,21 +117,19 @@ class StoreKitNode: Node {
         }
     }
     
+    @MainActor
     private func requestProducts(productIdentifiers: [String]) async {
         let failureSignal = didFailToLoadAppProducts
-        
-        await Task { @MainActor in
-            
-            do {
-                let appProducts = try await Product.products(for: productIdentifiers)
-                for product in appProducts {
-                    idToProductMap[product.id] = product
-                }
-            } catch {
-                print("Swift (requestProducts): Fail to load product identifiers")
-                print("  error:\n\(error)")
-                failureSignal.emit(productIdentifiers)
+        do {
+            let appProducts = try await Product.products(for: productIdentifiers)
+            for product in appProducts {
+                idToProductMap[product.id] = product
+                print("Swift (requestProducts): did fetch \(product.id)")
             }
+        } catch {
+            print("Swift (requestProducts): Fail to load product identifiers")
+            print("  error:\n\(error)")
+            failureSignal.emit(productIdentifiers)
         }
     }
     
@@ -145,6 +143,7 @@ class StoreKitNode: Node {
         
         Task { @MainActor in
             if idToProductMap[productId] == nil {
+                print("Swift (purchaseProduct): fetching \(productId)")
                 await requestProducts(productIdentifiers: [productId])
             }
             

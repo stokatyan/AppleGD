@@ -75,7 +75,7 @@ class GameKitNode: Node {
                             if let error {
                                 print("error: \(error)")
                             }
-//                            self.failedLeaderboardIds.insert(leaderboard.baseLeaderboardID)
+                            self.failedLeaderboardIds.insert(leaderboard.baseLeaderboardID)
                             return
                         }
 
@@ -97,16 +97,10 @@ class GameKitNode: Node {
      - Returns the loaded player as a `Dictionary`.
      */
     @Callable(autoSnakeCase: true)
-    func getLoadedPlayer() -> [String: String] {
-        var result = [String: String]()
-        
-        result["gamePlayerID"] = player.gamePlayerID
-        result["displayName"] = player.displayName
-        result["alias"] = player.alias
-        result["playerID"] = player.playerID
-        result["guestIdentifier"] = player.guestIdentifier
-        
-        return result
+    func getLoadedPlayer() -> GPlayer {
+        var gPlayer = GPlayer()
+        gPlayer.set(player)
+        return gPlayer
     }
 
     /**

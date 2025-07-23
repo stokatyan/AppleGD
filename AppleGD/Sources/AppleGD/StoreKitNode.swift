@@ -70,14 +70,11 @@ class StoreKitNode: Node {
                 do {
                     let transaction = try result.payloadValue
                     let productId = transaction.productID
-                    if getIsPurchasePending(id: productId) {
-                        setIsPurchasePending(id: productId, isPending: false)
-                        
-                        if transaction.revocationDate == nil {
-                            didCompletePurchase.emit(productId, true)
-                        }
+                    if transaction.revocationDate == nil {
+                        didCompletePurchase.emit(productId, true)
                     }
                     
+                    setIsPurchasePending(id: productId, isPending: false)
                     await transaction.finish()
                     print("Transaction update received:", transaction)
                 } catch {
@@ -160,10 +157,9 @@ class StoreKitNode: Node {
                         switch verificationResult {
                         case .unverified:
                             didCompletePurchase.emit(productId, false)
-                            print("Swift: purchaseProduct (unverified)")
+                            print("Swift (purchaseProduct): unverified")
                         case .verified:
-                            didCompletePurchase.emit(productId, true)
-                            print("Swift: purchaseProduct (verified)")
+                            print("Swift (purchaseProduct): verified, but will be handled in listenForTransactionUpdates")
                         }
                     case .userCancelled:
                         didCancelProductPurchase.emit(productId)

@@ -59,11 +59,6 @@ class GameKitNode: Node {
         Task {
             do {
                 let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: ids)
-                
-                var ids = [String]()
-                for leaderboard in leaderboards {
-                    ids.append(leaderboard.baseLeaderboardID)
-                }
                             
                 for leaderboard in leaderboards {
                     leaderboard.loadEntries(for: [player], timeScope: .allTime) { entry, entries, error in
@@ -126,10 +121,13 @@ class GameKitNode: Node {
      */
     @Callable(autoSnakeCase: true)
     func submitScore(score: Int, leaderboardIds: [String]) {
-        let signal = didSubmitScore
         GKLeaderboard.submitScore(score, context: 0, player: player, leaderboardIDs: leaderboardIds) { error in
             self.didSubmitScore.emit(error == nil)
-            guard error == nil else { return }
+            print("Swift (submitScore): did submit score")
+            guard error == nil else {
+                print("Swift (submitScore): \(error)")
+                return
+            }
             self.refreshLeaderboards(ids: leaderboardIds)
         }
     }

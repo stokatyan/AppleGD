@@ -10,7 +10,9 @@ import GameKit
 class GameCenterDelegate: NSObject, GKGameCenterControllerDelegate {
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         Task { @MainActor in
+            #if os(iOS)
             gameCenterViewController.dismiss(animated: true)
+            #endif
         }
     }
 }

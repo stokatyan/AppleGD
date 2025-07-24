@@ -9,7 +9,7 @@ import GameKit
 import SwiftGodot
 
 @Godot
-class GPlayer: RefCounted {
+class GPlayer: Node {
     
     @Export var gamePlayerID: String = ""
     @Export var displayName: String = ""

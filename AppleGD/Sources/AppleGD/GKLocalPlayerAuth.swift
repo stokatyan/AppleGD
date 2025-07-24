@@ -10,6 +10,7 @@ import GameKit
 class GKLocalPlayerAuth {
         
     init(delegate: GameKitNode) {
+        #if os(iOS)
         GKLocalPlayer.local.authenticateHandler = { viewController, error in
             if let viewController = viewController {
                 ViewControllerPresenter.present(viewController)
@@ -41,6 +42,7 @@ class GKLocalPlayerAuth {
             
             delegate.refreshFailedLeaderboards()
         }
+        #endif
     }
     
     

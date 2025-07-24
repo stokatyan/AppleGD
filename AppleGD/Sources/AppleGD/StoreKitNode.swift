@@ -13,8 +13,7 @@ class StoreKitNode: Node {
     
     private let kPendingPurchaseSet = "kPendingPurchaseSet"
     
-    @MainActor
-    private var idToProductMap = [String: Product]()
+    var products = [String: Product]()
     
     /**
      A signal that emits when a product purchase is completed.
@@ -64,70 +63,64 @@ class StoreKitNode: Node {
     
     @Callable(autoSnakeCase: true)
     func listenForTransactionUpdates() {
-        let didCompletePurchase = didCompleteProductPurchase
         Task {
             for await result in Transaction.updates {
                 do {
                     let transaction = try result.payloadValue
                     let productId = transaction.productID
-                    if transaction.revocationDate == nil {
-                        didCompletePurchase.emit(productId, true)
+                
+                    if getIsPurchasePending(id: productId), transaction.revocationDate == nil {
+                        setIsPurchasePending(id: productId, isPending: false)
+                        print("Swift (listenForTransactionUpdates): Did complete pending transaction")
+                        
+                        Task { @MainActor in
+                            self.didCompletePurchase(productId: productId)
+                            await transaction.finish()
+                        }
+                    } else {
+                        await transaction.finish()
                     }
-                    
-                    setIsPurchasePending(id: productId, isPending: false)
-                    await transaction.finish()
-                    print("Transaction update received:", transaction)
+                    print("Swift (listenForTransactionUpdates): \n  Did finish transaction: \(transaction.productID)")
                 } catch {
-                    print("Transaction update failed:", error)
+                    print("Swift (listenForTransactionUpdates): \(error)")
                 }
             }
         }
-    }
         
-    @Callable(autoSnakeCase: true)
-    func requestProducts(productIdentifiers: [String]) {
-        let successSignal = didLoadAppProducts
-        let failureSignal = didFailToLoadAppProducts
-        Task { @MainActor in
-            await self.requestProducts(productIdentifiers: productIdentifiers)
-            
-
-            var gProducts = VariantArray()
-            var failedToLoadProducts = [String]()
-            
-            for productIdentifier in productIdentifiers {
-                if let product = idToProductMap[productIdentifier] {
-                    print("Swift (requestProducts): succeeded to load product for id \(productIdentifier)")
-                    let gProduct = GProduct()
-                    await gProduct.set(product: product)
-                    gProducts.append(gProduct.toVariant())
-                } else {
-                    print("Swift (requestProducts): failed to load product for id \(productIdentifier)")
-                    failedToLoadProducts.append(productIdentifier)
+        Task {
+            for await result in Transaction.unfinished {
+                switch result {
+                case .verified(let transaction):
+                    print("Finishing unhandled transaction: \(transaction.productID)")
+                    await transaction.finish()
+                case .unverified(let transaction, let error):
+                    print("Unverified transaction: \(transaction.productID), error: \(error.localizedDescription)")
+                    await transaction.finish()
                 }
-            }
-            
-            successSignal.emit(gProducts)
-            if !failedToLoadProducts.isEmpty {
-                failureSignal.emit(failedToLoadProducts)
             }
         }
     }
     
     @MainActor
-    private func requestProducts(productIdentifiers: [String]) async {
-        let failureSignal = didFailToLoadAppProducts
+    private func didCompletePurchase(productId: String) {
+        didCompleteProductPurchase.emit(productId, true)
+    }
+        
+    @MainActor
+    private func requestProducts(productIdentifiers: [String]) async -> [String: Product] {
+        var result = [String: Product]()
         do {
             let appProducts = try await Product.products(for: productIdentifiers)
             for product in appProducts {
-                idToProductMap[product.id] = product
-                print("Swift (requestProducts): did fetch \(product.id)")
+                result[product.id] = product
+                print("Swift (requestProducts) did load: \(product.id)")
             }
         } catch {
-            print("Swift (requestProducts): Fail to load product identifiers")
-            print("  error:\n\(error)")
-            failureSignal.emit(productIdentifiers)
+            print("Swift (requestProducts) error: \(error)")
+            return result
         }
+        
+        return result
     }
     
     @Callable(autoSnakeCase: true)
@@ -139,43 +132,41 @@ class StoreKitNode: Node {
         let didReachUnkownState = didReachUnkownStateInProductPurchase
         
         Task { @MainActor in
-            if idToProductMap[productId] == nil {
-                print("Swift (purchaseProduct): fetching \(productId)")
-                await requestProducts(productIdentifiers: [productId])
-            }
+            let idToProductMap = await requestProducts(productIdentifiers: [productId])
             
             guard let product = idToProductMap[productId] else {
                 print("Swift (purchaseProduct): Failed to find product")
+                didFailToCompletePurchase.emit(productId)
                 return
             }
             
-            Task {
-                do {
-                    let result = await try product.purchase()
-                    switch result {
-                    case .success(let verificationResult):
-                        switch verificationResult {
-                        case .unverified:
-                            didCompletePurchase.emit(productId, false)
-                            print("Swift (purchaseProduct): unverified")
-                        case .verified:
-                            print("Swift (purchaseProduct): verified, but will be handled in listenForTransactionUpdates")
-                        }
-                    case .userCancelled:
-                        didCancelProductPurchase.emit(productId)
-                        print("Swift: purchaseProduct (userCancelled)")
-                    case .pending:
-                        setIsPurchasePending(id: productId, isPending: true)
-                        didCreatePendingPurchase.emit(productId)
-                        print("Swift: purchaseProduct (pending)")
-                    @unknown default:
-                        didReachUnkownState.emit(productId)
-                        print("Swift: purchaseProduct (unkown)")
+            do {
+                let result = await try product.purchase()
+                switch result {
+                case .success(let verificationResult):
+                    switch verificationResult {
+                    case .unverified:
+                        didCompletePurchase.emit(productId, false)
+                        print("Swift (purchaseProduct): unverified")
+                    case .verified(let transaction):
+                        didCompletePurchase.emit(productId, true)
+                        await transaction.finish()
+                        print("Swift (purchaseProduct): verified")
                     }
-                } catch {
-                    didFailToCompletePurchase.emit(productId)
-                    print("Swift: purchaseProduct (error): \(error)")
+                case .userCancelled:
+                    didCancelProductPurchase.emit(productId)
+                    print("Swift: purchaseProduct (userCancelled)")
+                case .pending:
+                    setIsPurchasePending(id: productId, isPending: true)
+                    didCreatePendingPurchase.emit(productId)
+                    print("Swift: purchaseProduct (pending)")
+                @unknown default:
+                    didReachUnkownState.emit(productId)
+                    print("Swift: purchaseProduct (unkown)")
                 }
+            } catch {
+                didFailToCompletePurchase.emit(productId)
+                print("Swift: purchaseProduct (error): \(error)")
             }
         }
     }

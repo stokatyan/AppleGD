@@ -150,8 +150,16 @@ class StoreKitNode: Node {
                         print("Swift (purchaseProduct): unverified")
                     case .verified(let transaction):
                         didCompletePurchase.emit(productId, true)
-                        await transaction.finish()
-                        print("Swift (purchaseProduct): verified")
+                        print(transaction)
+                        do {
+                            try await transaction.finish()
+                            listenForTransactionUpdates()
+                        }
+                        catch {
+                            print("Swift (purchaseProduct) error: \(error)")
+                        }
+                        
+                        print("Swift (purchaseProduct): finished")
                     }
                 case .userCancelled:
                     didCancelProductPurchase.emit(productId)
